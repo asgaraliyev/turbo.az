@@ -10,17 +10,19 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-
-
 model Post {
-  id              String        @id @default(auto()) @map("_id") @db.ObjectId
+  id              String   @id @default(auto()) @map("_id") @db.ObjectId
   url             String
   title           String
   title_args      String[]
   propeties       Json
+  propeties_obj   Json
   images          String[]
   extras          String[]
-  desctiption     String
+  desctiption     String?
   coordinates_lng Float?
   coordinates_lat Float?
+  make            Json?
+  model           Json?
+  turbo_az_id     Int?
 }

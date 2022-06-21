@@ -1,6 +1,5 @@
-import puppeteer from "puppeteer";
-import { PrismaClient } from "@prisma/client";
-export const makes=[
+
+export const makes = [
   { name: "Abarth", value: "280", models: [{ name: "595", value: "3367" }] },
   { name: "Acura", value: "28", models: [{ name: "MDX", value: "317" }] },
   { name: "Alfa Romeo", value: "30", models: [{ name: "4C", value: "3163" }] },
@@ -2268,6 +2267,8 @@ export const makes=[
     ],
   },
 ];
+import puppeteer from "puppeteer";
+import { PrismaClient } from "@prisma/client";
 const prisma = new PrismaClient();
 
 async function sleep(ms) {
@@ -2302,11 +2303,16 @@ function onPostEvaluate() {
     data.title_args = data.title.split(",").map((a) => a.trim());
     data.propeties = [];
     data.propety_els = document.querySelectorAll(".product-properties li");
-    const images_el = document.querySelectorAll(".product-photos img");
+    let a_href_els = document.querySelectorAll(".product-photos-large a");
     data.images = [];
-    for (let index = 0; index < images_el.length; index++) {
-      const img = images_el[index];
-      data.images.push(img.src);
+    for (let index = 0; index < a_href_els.length; index++) {
+      const a_href_el = a_href_els[index];
+      data.images.push(a_href_el.href);
+    }
+    a_href_els = document.querySelectorAll(".product-photos-thumbnails_m a");
+    for (let index = 0; index < a_href_els.length; index++) {
+      const a_href_el = a_href_els[index];
+      data.images.push(a_href_el.href);
     }
     data.propety_prettier = {
       price: (value) => {
@@ -2480,10 +2486,23 @@ async function run() {
         return all_links;
       });
       for (let post_index = 0; post_index < post_links.length; post_index++) {
-        const link = post_links[post_index];
-        await page.goto(link);
-        console.log(`${post_index + 1}/${post_links.length}`, link);
         try {
+          const link = post_links[post_index];
+          const post_logger = `page: ${page_index} post: ${post_index + 1}/${
+            post_links.length
+          } ${link}`;
+          const is_already_exists = !!(await prisma.post.findFirst({
+            where: {
+              url: link,
+            },
+          }));
+          if (is_already_exists) {
+            console.log("already exists", post_logger);
+            continue;
+          }
+          await page.goto(link);
+          console.log(post_logger);
+
           const post_data = await page.evaluate(onPostEvaluate);
           await createNewPost(post_data);
         } catch (error) {
@@ -2495,31 +2514,45 @@ async function run() {
   }
   await start();
 }
-function findModel(vehicle_name,make){
+function findModel(vehicle_name, make) {
   for (let index = 0; index < make.models.length; index++) {
     const model = make.models[index];
-    if(vehicle_name.includes(model.name)){
-      return {...model}
+    if (vehicle_name.includes(model.name)) {
+      return { ...model };
     }
   }
 }
-function findMake(vehicle_name){
+function findMake(vehicle_name) {
   for (let index = 0; index < makes.length; index++) {
     const make = makes[index];
-    if(vehicle_name.includes(make.name)){
-      return make
+    if (vehicle_name.includes(make.name)) {
+      return { ...make };
     }
   }
 }
 async function createNewPost(post_data) {
   delete post_data.propety_prettier;
-  const make=findMake(post_data.title_args[0])
-  const model=findModel(post_data.title_args[0],make)
-  console.log(make.name,model.name)
+  post_data.make = findMake(post_data.title_args[0]);
+  post_data.model = findModel(post_data.title_args[0], post_data.make);
+  delete post_data.make.models;
+  post_data.model.value = parseInt(post_data.model.value);
+  post_data.make.value = parseInt(post_data.make.value);
+  post_data.propeties_obj = {};
+  for (let index = 0; index < post_data.propeties.length; index++) {
+    const element = post_data.propeties[index];
+    post_data.propeties_obj[element.name] = element.value;
+  }
+  if (post_data.make.name == post_data.propeties_obj.brand) {
+    post_data.propeties_obj.brand = post_data.make.value;
+  }
+  if (post_data.model.name == post_data.propeties_obj.model) {
+    post_data.propeties_obj.model = post_data.model.value;
+  }
+  post_data.turbo_az_id = parseInt(post_data.url.split("/")[4].split("-")[0]);
   await prisma.post.create({
     data: {
       ...post_data,
     },
-  })
+  });
 }
 run();

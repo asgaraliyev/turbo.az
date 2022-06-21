@@ -4,7 +4,8 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "start": "node turbo.az.js"
+    "start": "node turbo.az.js",
+    "analize": "node analize.js"
   },
   "type": "module",
   "keywords": [],
