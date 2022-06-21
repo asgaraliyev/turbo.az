@@ -1,0 +1,1 @@
+npx playwright codegen instagram.com --device="iPhone 11"

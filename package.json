@@ -1,0 +1,22 @@
+{
+  "name": "insagtam-tagger",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "start": "node turbo.az.js"
+  },
+  "type": "module",
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@prisma/client": "^3.15.2",
+    "node-fetch": "^3.2.6",
+    "puppeteer": "^14.4.0",
+    "random-useragent": "^0.5.0"
+  },
+  "devDependencies": {
+    "prisma": "^3.15.2"
+  }
+}
